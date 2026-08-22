@@ -1,0 +1,129 @@
+// This is your Prisma schema file.
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  PROVIDER
+  ADMIN
+}
+
+enum ListingType {
+  PG
+  HOSTEL
+  TIFFIN
+  RESTAURANT
+  JOB
+  INTERNSHIP
+  SERVICE
+  EVENT
+  HEALTH
+  LIBRARY
+  OTHER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  clerkId       String   @unique
+  email         String   @unique
+  name          String?
+  image         String?
+  phone         String?
+  collegeId     String?
+  cityId        String?
+  year          Int?
+  course        String?
+  role          Role     @default(STUDENT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  college       College?          @relation(fields: [collegeId], references: [id])
+  city          City?             @relation(fields: [cityId], references: [id])
+  listings      Listing[]
+  marketplaceItems MarketplaceItem[]
+  reviews       Review[]
+}
+
+model City {
+  id        String    @id @default(cuid())
+  name      String
+  state     String
+  country   String    @default("India")
+  slug      String    @unique
+  colleges  College[]
+  users     User[]
+  listings  Listing[]
+}
+
+model College {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String
+  cityId    String
+  city      City      @relation(fields: [cityId], references: [id])
+  users     User[]
+  listings  Listing[]
+
+  @@unique([cityId, slug])
+}
+
+model Listing {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  type        ListingType
+  price       Int?
+  priceUnit   String?
+  address     String?
+  lat         Float?
+  lng         Float?
+  cityId      String
+  collegeId   String?
+  ownerId     String
+  images      String[]
+  meta        Json?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  city        City        @relation(fields: [cityId], references: [id])
+  college     College?    @relation(fields: [collegeId], references: [id])
+  owner       User        @relation(fields: [ownerId], references: [id])
+  reviews     Review[]
+}
+
+model MarketplaceItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  price       Int?
+  category    String
+  condition   String?
+  images      String[]
+  sellerId    String
+  cityId      String
+  isSold      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  seller      User     @relation(fields: [sellerId], references: [id])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  rating      Int
+  comment     String?
+  userId      String
+  listingId   String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  listing     Listing  @relation(fields: [listingId], references: [id])
+}
